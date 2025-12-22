@@ -1,0 +1,20 @@
+app_name: "Cloud Bill Hunter Enterprise"
+version: "2.1.0"
+currency: "$"
+
+# Data Generation Settings (for src/generate_data.py)
+data_generation:
+  rows: 10000
+  days_back: 90
+  zombie_probability: 0.05
+
+# Business Logic (The "Brain")
+business_rules:
+  zombie_threshold_days: 7    # How many days of 0 usage makes it a "Zombie"?
+  min_cost_threshold: 0.01    # Ignore items costing less than 1 cent
+
+# File Paths (Relative to project root)
+paths:
+  raw_data: "data/raw/aws_billing_data.csv"
+  processed_data: "data/processed/zombie_report.csv"
+  uploads_dir: "data/uploads"

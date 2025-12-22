@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Data (Never commit client data)
+data/raw/*
+data/processed/*
+data/uploads/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/

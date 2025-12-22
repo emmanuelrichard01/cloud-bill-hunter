@@ -1,0 +1,15 @@
+pandas
+faker
+numpy
+duckdb
+plotly
+streamlit
+pyyaml
+fastapi
+uvicorn
+python-multipart
+requests
+pytest
+httpx
+watchdog
+dbt-duckdb
