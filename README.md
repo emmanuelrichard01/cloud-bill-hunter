@@ -32,6 +32,7 @@ As cloud infrastructure scales, decentralized teams often provision resources (E
 
 The system follows a **Microservices Pattern** orchestrated via Docker Compose.
 
+```mermaid
 graph LR  
     subgraph "External World"  
         User\[User / CI Pipeline\]  
@@ -56,6 +57,7 @@ graph LR
       
     DB \-- Query (Read-Only) \--\> Dash  
     DB \-- Query (Read-Only) \--\> API
+```
 
 ### **Component Responsibilities**
 
