@@ -57,7 +57,7 @@ graph LR
 
     DB \-- Read-Only Queries \--\> Dash  
     DB \-- Read-Only Queries \--\> API
-    ```
+```
 
 **Design Principle:** All compute is stateless; durability and analytical truth live exclusively in the warehouse.
 
