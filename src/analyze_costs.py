@@ -7,16 +7,20 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ENGINE")
 
 class CloudBillHunter:
-    def __init__(self, config_path='config.yaml'):
+    # UPDATED: Accept db_path for testing
+    def __init__(self, config_path='config.yaml', db_path=None):
         self.root_dir = os.path.dirname(os.path.abspath(__file__))
         config_full_path = os.path.join(self.root_dir, '..', config_path)
         
         with open(config_full_path, 'r') as f:
             self.config = yaml.safe_load(f)
             
-        # PERSISTENT STORAGE
-        db_path = os.path.join(self.root_dir, '..', 'data/warehouse.duckdb')
-        self.con = duckdb.connect(database=db_path) 
+        # If no path provided, use the default from config/hardcoded
+        if db_path is None:
+             db_path = os.path.join(self.root_dir, '..', 'data/warehouse.duckdb')
+        
+        self.db_path = db_path
+        self.con = duckdb.connect(database=self.db_path) 
 
     def _read_sql(self, model_name):
         path = os.path.join(self.root_dir, 'sql/models', f"{model_name}.sql")
@@ -31,15 +35,19 @@ class CloudBillHunter:
     def ingest_data(self, csv_path):
         """BRONZE LAYER: Raw Ingestion"""
         logger.info("🏗️  Building BRONZE layer...")
+        # Normalize path for DuckDB
+        csv_path = os.path.normpath(csv_path).replace('\\', '/')
+        
+        # FIX: The previous logic doubled the data on fresh runs.
+        # "CREATE TABLE AS SELECT" inserts data. Then "INSERT" inserted it again.
+        # We add "WHERE 1=0" to CREATE TABLE so it only creates the structure (empty).
         self.con.execute(f"""
-            CREATE TABLE IF NOT EXISTS bronze_billing AS SELECT * FROM read_csv_auto('{csv_path}');
+            CREATE TABLE IF NOT EXISTS bronze_billing AS SELECT * FROM read_csv_auto('{csv_path}') WHERE 1=0;
             INSERT INTO bronze_billing SELECT * FROM read_csv_auto('{csv_path}');
         """)
 
     def run_pipeline(self):
         """Orchestrates the Silver and Gold transformations"""
-        # NOTE: We removed the try/finally block. 
-        # The CALLER is now responsible for calling .close()
         
         # --- SILVER LAYER ---
         logger.info("🥈 Building SILVER layer...")

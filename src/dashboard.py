@@ -166,7 +166,7 @@ elif page == "Dashboard":
 
         st.dataframe(
             df_ranked,
-            use_container_width=True,
+            width='stretch',
             column_config={
                 cost_col: st.column_config.NumberColumn("Monthly Waste ($)", format="$%.2f"),
                 owner_col: st.column_config.TextColumn("Owner / Team"),
@@ -197,7 +197,7 @@ elif page == "Dashboard":
                 color_continuous_scale="RdBu_r",
                 title="Cost Leakage Hierarchy"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             st.success("No anomalies to visualize!")
 

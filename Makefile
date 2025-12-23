@@ -27,7 +27,7 @@ clean:
 # --- 🧪 TESTING & QA ---
 test:
 	@echo "🧪 Running Unit Tests..."
-	pytest tests/
+	python -m pytest tests/
 
 api-test:
 	@echo "🔌 Pinging API Health Check..."

@@ -12,4 +12,3 @@ requests
 pytest
 httpx
 watchdog
-dbt-duckdb

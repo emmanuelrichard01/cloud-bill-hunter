@@ -11,7 +11,7 @@
 
 **Cloud Bill Hunter** is a specialized data platform built to solve the "Cloud Waste" problem. It ingests raw AWS Cost & Usage Reports (CUR), transforms them into actionable insights using an embedded OLAP engine (**DuckDB**), and serves data via a decoupled API and Dashboard.
 
-Unlike static reporting tools, this system is **Event-Driven**: it watches for data arrival, triggers an automated ETL pipeline (Bronze $\\to$ Silver $\\to$ Gold), and pushes updates to the warehouse in real-time, enabling sub-second anomaly detection on billing datasets up to 10GB.
+Unlike static reporting tools, the platform operates as an **event-driven cost intelligence engine**, reacting to billing data arrival and producing near-real-time waste insights with deterministic guarantees: it watches for data arrival, triggers an automated ETL pipeline (Bronze $\\to$ Silver $\\to$ Gold), and pushes updates to the warehouse in real-time, enabling sub-second anomaly detection on billing datasets up to 10GB.
 
 ## **2️⃣ Problem Statement & Constraints**
 
@@ -32,32 +32,34 @@ As cloud infrastructure scales, decentralized teams often provision resources (E
 
 The system follows a **Microservices Pattern** orchestrated via Docker Compose.
 
-```mermaid
+``` mermaid
 graph LR  
-    subgraph "External World"  
+    subgraph External\_World  
         User\[User / CI Pipeline\]  
         S3\[S3 Bucket / Landing Zone\]  
     end
 
-    subgraph "Cloud Bill Hunter Platform"  
-        Watcher\[👀 Watchdog Service\]  
-        API\[🔌 FastAPI Gateway\]  
-        Engine\[⚙️ Compute Engine\]  
-        DB\[(🦆 DuckDB Warehouse)\]  
-        Dash\[📊 Streamlit Dashboard\]  
+    subgraph Cloud\_Bill\_Hunter\_Platform  
+        Watcher\[Watchdog Service\]  
+        API\[FastAPI Gateway\]  
+        Engine\[Compute Engine\]  
+        DB\[(DuckDB Warehouse)\]  
+        Dash\[Streamlit Dashboard\]  
     end
 
     User \-- POST /upload \--\> API  
-    S3 \-- File Event \--\> Watcher  
-      
+    S3 \-- File Event \--\> Watcher
+
     API \-- Trigger \--\> Engine  
-    Watcher \-- Trigger \--\> Engine  
-      
-    Engine \-- ETL Process \--\> DB  
-      
-    DB \-- Query (Read-Only) \--\> Dash  
-    DB \-- Query (Read-Only) \--\> API
-```
+    Watcher \-- Trigger \--\> Engine
+
+    Engine \-- ETL Process \--\> DB
+
+    DB \-- Read-Only Queries \--\> Dash  
+    DB \-- Read-Only Queries \--\> API
+    ```
+
+**Design Principle:** All compute is stateless; durability and analytical truth live exclusively in the warehouse.
 
 ### **Component Responsibilities**
 
@@ -75,13 +77,12 @@ The pipeline implements a strict **Bronze-Silver-Gold** data progression to ensu
 ### **🥉 Bronze Layer (Raw Ingestion)**
 
 * **Input:** Raw CSV files from AWS CUR.  
-* **Action:** Direct copy into DuckDB using read\_csv\_auto.  
+* **Action:** Schema-on-read ingestion into DuckDB using read\_csv\_auto, preserving raw fidelity while deferring type enforcement.  
 * **Goal:** Immutable record of what was received. No transformations.
 
 ### **🥈 Silver Layer (Cleaning & Normalization)**
 
-* **Action:**  
-  * Casting string types to strict numeric/date types.  
+* **Action:** \* Casting string types to strict numeric/date types.  
   * Standardizing column names (e.g., LineItem/UnblendedCost $\\to$ cost).  
   * **Star Schema Transformation:** Splitting data into Fact\_Usage and Dim\_Resource.  
 * **Goal:** Clean data ready for multiple downstream use cases.
@@ -115,7 +116,8 @@ The pipeline implements a strict **Bronze-Silver-Gold** data progression to ensu
 
 ### **Idempotency**
 
-The ingestion pipeline is designed to be **idempotent**.
+Each ingestion run is fingerprinted using file hash \+ billing period to guarantee deterministic reprocessing.  
+The ingestion pipeline is designed to be idempotent.
 
 * The Bronze layer uses CREATE OR REPLACE patterns (or specific partition overwrites) to prevent duplicate data processing if a file is re-uploaded.
 
@@ -135,21 +137,21 @@ The ingestion pipeline is designed to be **idempotent**.
 
 The entire platform is containerized. Run one command to spin up the fleet.
 
-\# 1\. Build and Launch  
+\# 1\. Build and Launch
 make up
 
-\# 2\. Access Interfaces  
-\# Dashboard: <http://localhost:8501>  
+\# 2\. Access Interfaces
+\# Dashboard: <http://localhost:8501>
 \# API Docs:  <http://localhost:8000/docs>
 
 ### **Simulating Data Events**
 
 The system watches data/landing\_zone.
 
-\# Generate synthetic billing data  
+\# Generate synthetic billing data
 make data
 
-\# Trigger the pipeline via file drop  
+\# Trigger the pipeline via file drop
 cp data/raw/aws\_billing\_data.csv data/landing\_zone/
 
 ## **8️⃣ Testing Strategy**
@@ -168,8 +170,10 @@ make test
 | **10GB+ Data** | Single-node DuckDB RAM usage | Migrate storage to **S3 \+ Parquet** and compute to **Spark/PySpark**. |
 | **Multi-Tenancy** | Single Warehouse file | Implement **Row-Level Security (RLS)** or separate DB files per Tenant ID. |
 | **Real-Time Cost** | Batch CSV latency | Shift ingestion to **Kafka Connect** reading directly from AWS Cost Explorer API. |
+| **Org Scale** | Ad-hoc heuristics | Externalize rules into a policy engine (YAML/SQL-based) |
 
 ## **👤 Author**
 
-Emmanuel Richard  
-Data Engineer focused on Building Resilient Systems
+Emmanuel Richard
+
+Data Engineer focused on Building Resilient Systems.
