@@ -32,31 +32,32 @@ As cloud infrastructure scales, decentralized teams often provision resources (E
 
 The system follows a **Microservices Pattern** orchestrated via Docker Compose.
 
-``` mermaid
-graph LR  
-    subgraph External\_World  
-        User\[User / CI Pipeline\]  
-        S3\[S3 Bucket / Landing Zone\]  
-    end
+```mermaid
+graph LR
 
-    subgraph Cloud\_Bill\_Hunter\_Platform  
-        Watcher\[Watchdog Service\]  
-        API\[FastAPI Gateway\]  
-        Engine\[Compute Engine\]  
-        DB\[(DuckDB Warehouse)\]  
-        Dash\[Streamlit Dashboard\]  
-    end
+subgraph External_World
+    User[User or CI Pipeline]
+    S3[S3 Landing Zone]
+end
 
-    User \-- POST /upload \--\> API  
-    S3 \-- File Event \--\> Watcher
+subgraph Cloud_Bill_Hunter_Platform
+    Watcher[Watchdog Service]
+    API[FastAPI Gateway]
+    Engine[Compute Engine]
+    DB[DuckDB Warehouse]
+    Dash[Streamlit Dashboard]
+end
 
-    API \-- Trigger \--\> Engine  
-    Watcher \-- Trigger \--\> Engine
+User -->|POST upload| API
+S3 -->|File Event| Watcher
 
-    Engine \-- ETL Process \--\> DB
+API -->|Trigger| Engine
+Watcher -->|Trigger| Engine
 
-    DB \-- Read-Only Queries \--\> Dash  
-    DB \-- Read-Only Queries \--\> API
+Engine -->|ETL Bronze to Silver to Gold| DB
+
+DB -->|Read Only Queries| Dash
+DB -->|Read Only Queries| API
 ```
 
 **Design Principle:** All compute is stateless; durability and analytical truth live exclusively in the warehouse.
